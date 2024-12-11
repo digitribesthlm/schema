@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     }
     
     const { db } = await connectToDatabase();
-    const queryDomain = domain === 'localhost' ? 'www.climberbi.co.uk' : domain;
+    const queryDomain = domain === 'localhost' ? process.env.SCHEMA_DOMAIN : domain;
     console.log('Query domain:', queryDomain);
 
     const [orgSchema, productSchema] = await Promise.all([
