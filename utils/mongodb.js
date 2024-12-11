@@ -1,8 +1,4 @@
-let MongoClient;
-if (typeof window === 'undefined') {
-  // Only import mongodb on the server side
-  MongoClient = require('mongodb').MongoClient;
-}
+import { MongoClient } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
   throw new Error(
@@ -36,6 +32,6 @@ if (process.env.NODE_ENV === 'development') {
 
 export async function connectToDatabase() {
   const client = await clientPromise;
-  const db = client.db(dbName);
+  const db = client.db(dbName); // Now using the environment variable
   return { db, client };
 }
