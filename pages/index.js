@@ -1,11 +1,10 @@
-import Head from 'next/head';
+import Head from 'next/head'
 
 export default function Home() {
   return (
     <div>
       <Head>
         <title>Schema Delivery System</title>
-        <script src="/schema-loader.js" />
       </Head>
       <main>
         <h1>Schema Delivery System</h1>
@@ -16,5 +15,5 @@ export default function Home() {
         </ul>
       </main>
     </div>
-  );
+  )
 }
