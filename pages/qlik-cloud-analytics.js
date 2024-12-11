@@ -1,23 +1,24 @@
 import Head from 'next/head';
 
-export default function QlikCloudAnalytics() {
+export default async function QlikCloudAnalytics({ schemas }) {
   return (
     <div>
       <Head>
-        <script src="/schema-loader.js" />
+        <title>Qlik Cloud Analytics</title>
       </Head>
-      <h1>Qlik Cloud Analytics</h1>
-      <p>This is a test product page that should load the product schema.</p>
-      <pre id="schema-output"></pre>
+      <pre id="schema-output">{JSON.stringify(schemas, null, 2)}</pre>
     </div>
   );
 }
 
-// Add script to print schema in the background
-if (typeof window !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', () => {
-    const schemaOutput = document.getElementById('schema-output');
-    const schemas = JSON.parse(localStorage.getItem('schema_cache'))?.schemas || [];
-    schemaOutput.textContent = JSON.stringify(schemas, null, 2);
-  });
+export async function getServerSideProps({ req }) {
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const url = `${protocol}://${req.headers.host}/api/schema?url=${protocol}://${req.headers.host}/qlik-cloud-analytics&domain=${req.headers.host}`;
+  
+  const response = await fetch(url);
+  const data = await response.json();
+  
+  return {
+    props: data
+  };
 }
