@@ -1,13 +1,8 @@
 import Head from 'next/head';
 
-export default async function QlikCloudAnalytics({ schemas }) {
+export default function QlikCloudAnalytics({ schemas }) {
   return (
-    <div>
-      <Head>
-        <title>Qlik Cloud Analytics</title>
-      </Head>
-      <pre id="schema-output">{JSON.stringify(schemas, null, 2)}</pre>
-    </div>
+    <pre>{JSON.stringify(schemas, null, 2)}</pre>
   );
 }
 

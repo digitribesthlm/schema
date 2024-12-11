@@ -1,14 +1,12 @@
-import SchemaViewer from '../components/SchemaViewer';
 import Head from 'next/head';
 
-export default async function QlikAutoML({ schemas }) {
+export default function QlikAutoML({ schemas }) {
   return (
     <div>
       <Head>
         <script src="/schema-loader.js" />
       </Head>
-      <pre id="schema-output"></pre>
-      <SchemaViewer schema={schemas} />
+      <pre id="schema-output">{JSON.stringify(schemas, null, 2)}</pre>
     </div>
   );
 }
