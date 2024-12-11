@@ -1,19 +1,20 @@
-import SchemaViewer from '../components/SchemaViewer';
-import { useEffect } from 'react';
-import { loadSchemas } from '../utils/schemaLoader';
+import Head from 'next/head';
 
 export default function Home() {
-  useEffect(() => {
-    loadSchemas();
-  }, []);
-
   return (
     <div>
-      <h1>Home Page</h1>
-      <p>This page should load the organization schema.</p>
-      <a href="/qlik-cloud-analytics">Go to Product Page</a>
-      
-      <SchemaViewer />
+      <Head>
+        <title>Schema Delivery System</title>
+        <script src="/schema-loader.js" />
+      </Head>
+      <main>
+        <h1>Schema Delivery System</h1>
+        <p>Welcome to the Schema Delivery System. Visit one of our test pages:</p>
+        <ul>
+          <li><a href="/qlik-cloud-analytics">Qlik Cloud Analytics</a></li>
+          <li><a href="/qlik-automl">Qlik AutoML</a></li>
+        </ul>
+      </main>
     </div>
   );
 }

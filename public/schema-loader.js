@@ -1,41 +1,83 @@
+import getConfig from 'next/config';
+
 (function() {
-  const loadSchemas = async () => {
+  const { publicRuntimeConfig } = getConfig();
+  const SCHEMA_API = publicRuntimeConfig.schemaApiUrl;
+  const CACHE_KEY = 'schema_cache';
+  const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+  const getCachedSchemas = () => {
     try {
-      const currentUrl = window.location.href;
-      console.log('Loading schemas for:', currentUrl);
+      const cache = localStorage.getItem(CACHE_KEY);
+      if (!cache) return null;
 
-      const response = await fetch(`/api/schema?url=${encodeURIComponent(currentUrl)}`);
-      console.log('Response status:', response.status);
+      const { schemas, timestamp, url } = JSON.parse(cache);
+      const isExpired = Date.now() - timestamp > CACHE_DURATION;
+      const urlChanged = url !== window.location.href;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (isExpired || urlChanged) {
+        localStorage.removeItem(CACHE_KEY);
+        return null;
       }
 
-      const { schemas } = await response.json();
-      console.log('Received schemas:', schemas);
+      return schemas;
+    } catch (error) {
+      console.error('Cache error:', error);
+      return null;
+    }
+  };
 
-      // Remove existing schemas
+  const injectSchemas = (schemas) => {
+    if (!schemas || !Array.isArray(schemas)) return;
+    
+    try {
       document.querySelectorAll('script[type="application/ld+json"]')
         .forEach(script => script.remove());
 
-      // Add new schemas
       schemas.forEach(schema => {
+        if (!schema) return;
         const script = document.createElement('script');
         script.type = 'application/ld+json';
         script.textContent = JSON.stringify(schema);
         document.head.appendChild(script);
-        console.log('Injected schema:', schema['@type']);
       });
-
     } catch (error) {
-      console.error('Schema loader error:', error);
+      console.error('Schema injection error:', error);
     }
   };
 
-  // Load when DOM is ready
+  const loadSchemas = async () => {
+    const cachedSchemas = getCachedSchemas();
+    if (cachedSchemas) {
+      injectSchemas(cachedSchemas);
+      return;
+    }
+
+    try {
+      const apiUrl = new URL(SCHEMA_API, window.location.origin);
+      apiUrl.searchParams.set('url', window.location.href);
+      apiUrl.searchParams.set('domain', window.location.hostname);
+
+      const response = await fetch(apiUrl.toString());
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const { schemas } = await response.json();
+      if (schemas && Array.isArray(schemas)) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          schemas,
+          timestamp: Date.now(),
+          url: window.location.href
+        }));
+        injectSchemas(schemas);
+      }
+    } catch (error) {
+      console.error('Schema loading error:', error);
+    }
+  };
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadSchemas);
   } else {
     loadSchemas();
   }
-})(); 
+})();
