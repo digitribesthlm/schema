@@ -39,45 +39,59 @@ export default async function handler(req, res) {
     }
 
     const domain = (req.query.domain || new URL(url).hostname).split(':')[0];
-    console.log('Checking domain:', domain);
+    console.log('🔍 Checking domain:', domain);
     
     if (!isAllowedDomain(domain)) {
-      console.error('Domain not authorized:', domain);
+      console.error('❌ Domain not authorized:', domain);
       return res.status(403).json({ error: 'Domain not authorized' });
     }
+    console.log('✅ Domain authorized:', domain);
 
     const path = new URL(url).pathname;
     const cacheKey = `${domain}:${path}`;
-    console.log('Path:', path, 'Cache key:', cacheKey);
+    console.log('🔍 Looking up:', { path, cacheKey });
     
     // Clear cache for debugging
     cache.clear();
+    console.log('🧹 Cache cleared for debugging');
     
     const { db } = await connectToDatabase();
+    console.log('📡 Connected to MongoDB');
     
-    // Only use the exact domain from the request
-    console.log('Looking for schemas with domain:', domain);
-
-    const [orgSchema, productSchema] = await Promise.all([
-      db.collection('organization-schemas').findOne({
-        domain: domain,
-        active: true
-      }),
-      db.collection('product-schemas').findOne({
+    // Log the exact query we'll make
+    const mongoQuery = {
+      productQuery: {
         domain: domain,
         active: true,
         'metadata.pagePatterns': path
-      })
+      },
+      orgQuery: {
+        domain: domain,
+        active: true
+      }
+    };
+    console.log('🔍 MongoDB Query:', JSON.stringify(mongoQuery, null, 2));
+
+    const [orgSchema, productSchema] = await Promise.all([
+      db.collection('organization-schemas').findOne(mongoQuery.orgQuery),
+      db.collection('product-schemas').findOne(mongoQuery.productQuery)
     ]);
 
     // Log what we found
-    console.log('Found schemas:', {
-      orgSchema: orgSchema ? { domain: orgSchema.domain, active: orgSchema.active } : null,
-      productSchema: productSchema ? { 
-        domain: productSchema.domain, 
-        active: productSchema.active, 
+    console.log('📦 Found schemas:', {
+      organization: orgSchema ? {
+        id: orgSchema._id,
+        domain: orgSchema.domain,
+        active: orgSchema.active,
+        type: orgSchema.schemaType
+      } : null,
+      product: productSchema ? {
+        id: productSchema._id,
+        domain: productSchema.domain,
+        active: productSchema.active,
+        type: productSchema.schemaType,
         patterns: productSchema.metadata?.pagePatterns,
-        path: path
+        matchedPath: path
       } : null
     });
 
@@ -86,7 +100,7 @@ export default async function handler(req, res) {
       orgSchema && enhanceSchema(orgSchema.schema)
     ].filter(Boolean);
 
-    console.log('Returning schemas:', schemas.length);
+    console.log(`✨ Returning ${schemas.length} schema(s)`);
 
     const response = { schemas };
     cache.put(cacheKey, response, CACHE_DURATION);
