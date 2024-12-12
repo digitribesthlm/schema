@@ -1,17 +1,6 @@
 import Head from 'next/head'
-import getConfig from 'next/config'
 
-export async function getStaticProps() {
-  const { publicRuntimeConfig } = getConfig()
-  
-  return {
-    props: {
-      schemaApiUrl: publicRuntimeConfig.schemaApiUrl
-    }
-  }
-}
-
-export default function Home(props) {
+export default function Home() {
   return (
     <div>
       <Head>
