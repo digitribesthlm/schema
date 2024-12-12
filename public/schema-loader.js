@@ -10,11 +10,12 @@
         domain: domain 
       });
       
-      if (!process.env.NEXT_PUBLIC_SCHEMA_API_URL) {
-        throw new Error('NEXT_PUBLIC_SCHEMA_API_URL environment variable is not set');
+      const apiUrl = window.__NEXT_DATA__?.runtimeConfig?.NEXT_PUBLIC_SCHEMA_API_URL;
+      if (!apiUrl) {
+        console.error('❌ Schema API URL not configured');
+        return;
       }
       
-      const apiUrl = process.env.NEXT_PUBLIC_SCHEMA_API_URL;
       console.log('🔧 Using API URL:', apiUrl);
       
       const fullUrl = `${apiUrl}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
