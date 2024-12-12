@@ -8,6 +8,7 @@ const nextConfig = {
     SCHEMA_DOMAIN: process.env.SCHEMA_DOMAIN
   },
   webpack: (config) => {
+    config.plugins = config.plugins || [];
     config.plugins.push(
       new webpack.DefinePlugin({
         '__SCHEMA_API_URL__': JSON.stringify(process.env.NEXT_PUBLIC_SCHEMA_API_URL)
