@@ -1,3 +1,5 @@
+const webpack = require('webpack');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
@@ -7,7 +9,7 @@ const nextConfig = {
   },
   webpack: (config) => {
     config.plugins.push(
-      new config.webpack.DefinePlugin({
+      new webpack.DefinePlugin({
         '__SCHEMA_API_URL__': JSON.stringify(process.env.NEXT_PUBLIC_SCHEMA_API_URL)
       })
     );
