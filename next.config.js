@@ -7,10 +7,10 @@ const nextConfig = {
     ALLOWED_DOMAINS: process.env.ALLOWED_DOMAINS,
     SCHEMA_DOMAIN: process.env.SCHEMA_DOMAIN
   },
-  webpack: (config) => {
+  webpack: (config, { webpack }) => {
     config.plugins = config.plugins || [];
     config.plugins.push(
-      new DefinePlugin({
+      new webpack.DefinePlugin({
         '__SCHEMA_API_URL__': JSON.stringify(process.env.NEXT_PUBLIC_SCHEMA_API_URL)
       })
     );
