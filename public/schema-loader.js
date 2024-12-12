@@ -10,8 +10,11 @@
         domain: domain 
       });
 
-      // Use relative URL to avoid SSL issues
-      const apiUrl = '/api/schema';
+      // Get API URL from environment variable
+      const apiUrl = process.env.NEXT_PUBLIC_SCHEMA_API_URL;
+      if (!apiUrl) {
+        throw new Error('Schema API URL not configured');
+      }
       console.log('🔧 Using API URL:', apiUrl);
       
       const fullUrl = `${apiUrl}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;

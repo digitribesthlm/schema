@@ -31,8 +31,12 @@ export default async function handler(req, res) {
       headers: req.headers
     });
 
-    // Forward to data domain
-    const dataUrl = `https://data.digigrowth.se/api/schema?url=${encodeURIComponent(url)}&domain=${domain}&format=${format}`;
+    if (!process.env.NEXT_PUBLIC_SCHEMA_API_URL) {
+      throw new Error('NEXT_PUBLIC_SCHEMA_API_URL not configured');
+    }
+
+    // Use environment variable for API URL
+    const dataUrl = `${process.env.NEXT_PUBLIC_SCHEMA_API_URL}?url=${encodeURIComponent(url)}&domain=${domain}&format=${format}`;
     console.log('🔄 Forwarding to:', dataUrl);
     
     const response = await fetch(dataUrl, {
@@ -42,12 +46,17 @@ export default async function handler(req, res) {
       }
     });
 
+    if (!response.ok) {
+      throw new Error(`Data API responded with ${response.status}: ${response.statusText}`);
+    }
+
     console.log('📤 Data response:', {
       status: response.status,
       statusText: response.statusText
     });
 
     const data = await response.text();
+    console.log('📦 Received data length:', data.length);
     
     // Set same headers as original response
     res.setHeader('Content-Type', 'text/html');
