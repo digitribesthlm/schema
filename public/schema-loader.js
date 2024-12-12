@@ -7,7 +7,7 @@
       // Get the API URL from the page's runtime config
       const runtimeConfig = window.__NEXT_DATA__?.runtimeConfig || {};
       const apiBase = runtimeConfig.schemaApiUrl || '/api/schema';
-      const apiUrl = `${apiBase}?url=${encodeURIComponent(currentUrl)}&domain=${domain}`;
+      const apiUrl = `${apiBase}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
       
       const response = await fetch(apiUrl);
       if (!response.ok) {
@@ -15,19 +15,21 @@
         return;
       }
       
-      const data = await response.json();
-      if (!data.schemas || !data.schemas.length) {
+      const schemaHtml = await response.text();
+      if (!schemaHtml) {
         console.log('No schemas found for this page');
         return;
       }
 
-      // Add each schema to the page
-      data.schemas.forEach(schema => {
-        const script = document.createElement('script');
-        script.type = 'application/ld+json';
-        script.text = JSON.stringify(schema);
-        document.head.appendChild(script);
-      });
+      // Create a temporary container and set its HTML
+      const temp = document.createElement('div');
+      temp.innerHTML = schemaHtml;
+      
+      // Move each script tag to the head
+      const scripts = temp.getElementsByTagName('script');
+      while (scripts.length > 0) {
+        document.head.appendChild(scripts[0]);
+      }
       
       console.log('Schemas loaded successfully');
     } catch (error) {

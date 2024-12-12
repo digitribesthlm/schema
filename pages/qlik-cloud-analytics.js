@@ -1,33 +1,31 @@
 import Head from 'next/head';
 
-export default function QlikCloudAnalytics({ schemas }) {
-  return (
-    <pre>{JSON.stringify(schemas, null, 2)}</pre>
-  );
+export default function QlikCloudAnalytics() {
+  return null;
 }
 
 export async function getServerSideProps({ req }) {
   try {
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     const host = req.headers.host;
-    const url = `${protocol}://${host}/api/schema?url=${encodeURIComponent(`${protocol}://${host}/qlik-cloud-analytics`)}&domain=${host}`;
+    const url = `${protocol}://${host}/api/schema?url=${encodeURIComponent(`${protocol}://${host}/qlik-cloud-analytics`)}&domain=${host}&format=html`;
     
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`API responded with status ${response.status}`);
     }
-    const data = await response.json();
     
+    const html = await response.text();
     return {
       props: {
-        schemas: data.schemas || []
+        schemaHtml: html
       }
     };
   } catch (error) {
     console.error('Error fetching schema:', error);
     return {
       props: {
-        schemas: []
+        schemaHtml: ''
       }
     };
   }
