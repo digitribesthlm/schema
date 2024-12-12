@@ -6,13 +6,18 @@ import { enhanceSchema } from '../../utils/schemaEnhancer';
 const CACHE_DURATION = 24 * 60 * 60 * 1000;
 
 const isAllowedDomain = (domain) => {
-  if (process.env.NODE_ENV === 'development') {
-    // Strip port number for localhost check
-    const domainWithoutPort = domain.split(':')[0];
-    if (domainWithoutPort === 'localhost') return true;
+  // Strip port number if present
+  const domainWithoutPort = domain.split(':')[0];
+  
+  if (process.env.NODE_ENV === 'development' && domainWithoutPort === 'localhost') {
+    return true;
   }
+  
   const allowedDomains = process.env.ALLOWED_DOMAINS?.split(',').map(d => d.trim()) || [];
-  return allowedDomains.some(d => domain === d || domain.endsWith(`.${d}`));
+  return allowedDomains.some(d => 
+    domainWithoutPort === d || 
+    domainWithoutPort.endsWith(`.${d}`)
+  );
 };
 
 export default async function handler(req, res) {
@@ -33,15 +38,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'URL parameter is required' });
     }
 
-    const domain = req.query.domain || new URL(url).hostname;
+    const domain = (req.query.domain || new URL(url).hostname).split(':')[0];
     console.log('Checking domain:', domain);
     
-    // Check if domain is allowed
-    const allowedDomains = process.env.ALLOWED_DOMAINS?.split(',').map(d => d.trim()) || [];
-    console.log('Allowed domains:', allowedDomains);
-    
     if (!isAllowedDomain(domain)) {
-      console.error('Domain not authorized:', domain, 'Allowed domains:', allowedDomains);
+      console.error('Domain not authorized:', domain);
       return res.status(403).json({ error: 'Domain not authorized' });
     }
 
@@ -56,8 +57,11 @@ export default async function handler(req, res) {
     }
     
     const { db } = await connectToDatabase();
-    // Strip port for localhost in development
-    const queryDomain = domain === 'localhost:3000' ? process.env.SCHEMA_DOMAIN : domain;
+    // In production, always use SCHEMA_DOMAIN
+    const queryDomain = process.env.NODE_ENV === 'production' 
+      ? process.env.SCHEMA_DOMAIN 
+      : (domain === 'localhost' ? process.env.SCHEMA_DOMAIN : domain);
+    
     console.log('Query domain for MongoDB:', queryDomain);
 
     const [orgSchema, productSchema] = await Promise.all([
@@ -74,8 +78,8 @@ export default async function handler(req, res) {
       hasProductSchema: !!productSchema,
       orgSchemaDomain: orgSchema?.domain,
       productSchemaDomain: productSchema?.domain,
-      path: path,
-      queryDomain: queryDomain
+      path,
+      queryDomain
     });
 
     const schemas = [
