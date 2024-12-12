@@ -10,7 +10,8 @@
         domain: domain 
       });
 
-      const apiUrl = 'https://data.digigrowth.se/api/schema';
+      // Use relative URL to avoid SSL issues
+      const apiUrl = '/api/schema';
       console.log('🔧 Using API URL:', apiUrl);
       
       const fullUrl = `${apiUrl}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
@@ -56,23 +57,37 @@
       }
 
       let addedCount = 0;
+      const schemas = [];
       while (scripts.length > 0) {
         const script = scripts[0];
         try {
+          // Create a new script element
+          const newScript = document.createElement('script');
+          newScript.type = 'application/ld+json';
+          
+          // Parse and validate the JSON
           const content = JSON.parse(script.text);
+          schemas.push(content);
+          
           console.log('✅ Adding schema:', {
             type: script.type,
             schemaType: content['@type'],
             name: content.name
           });
-          document.head.appendChild(script);
+          
+          // Set the content and add to head
+          newScript.textContent = JSON.stringify(content, null, 2);
+          document.head.appendChild(newScript);
           addedCount++;
         } catch (e) {
           console.error('❌ Failed to parse schema JSON:', e);
         }
+        // Remove from temp container
+        temp.removeChild(script);
       }
       
-      console.log(`✨ Successfully loaded ${addedCount} of ${initialCount} schemas`);
+      console.log(`✨ Successfully loaded ${addedCount} of ${initialCount} schemas:`, schemas);
+      
     } catch (error) {
       console.error('❌ Error loading schema:', {
         message: error.message,
