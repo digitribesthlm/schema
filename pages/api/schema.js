@@ -112,14 +112,8 @@ export default async function handler(req, res) {
         `<script type="application/ld+json">${JSON.stringify(schema)}</script>`
       ).join('\n');
       
-      // Set headers to prevent Next.js from wrapping the response
       res.setHeader('Content-Type', 'text/html');
-      res.setHeader('Cache-Control', 's-maxage=86400');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.removeHeader('Content-Security-Policy');
-      
-      // Send raw HTML without any Next.js wrapper
-      return res.status(200).send(schemaHtml);
+      return res.send(schemaHtml);
     }
 
     res.setHeader('Access-Control-Allow-Origin', '*');

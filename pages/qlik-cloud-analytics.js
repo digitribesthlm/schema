@@ -1,7 +1,16 @@
 import Head from 'next/head';
 
-export default function QlikCloudAnalytics() {
-  return null;
+export default function QlikCloudAnalytics({ schemaHtml }) {
+  return (
+    <>
+      <Head>
+        <script 
+          type="text/html"
+          dangerouslySetInnerHTML={{ __html: schemaHtml }}
+        />
+      </Head>
+    </>
+  );
 }
 
 export async function getServerSideProps({ req }) {

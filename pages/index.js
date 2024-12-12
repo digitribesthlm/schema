@@ -11,7 +11,7 @@ export default function Home() {
         <p>Welcome to the Schema Delivery System.. Visit one of our test pages:</p>
         <ul>
           <li><a href="/qlik-cloud-analytics">Qlik Cloud Analytics</a></li>
-          <li><a href="/qlik-automl">Qlik AutoML 2</a></li>
+          <li><a href="/qlik-automl">Qlik AutoML 21</a></li>
         </ul>
       </main>
     </div>
