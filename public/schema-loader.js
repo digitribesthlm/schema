@@ -9,26 +9,18 @@
         url: currentUrl,
         domain: domain 
       });
-      
-      const apiUrl = window.__NEXT_DATA__?.runtimeConfig?.NEXT_PUBLIC_SCHEMA_API_URL;
-      if (!apiUrl) {
-        console.error('❌ Schema API URL not configured');
-        return;
-      }
-      
+
+      const apiUrl = 'https://data.digigrowth.se/api/schema';
       console.log('🔧 Using API URL:', apiUrl);
       
       const fullUrl = `${apiUrl}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
-      
-      console.log('🔍 Fetching from API:', fullUrl);
+      console.log('🔍 Fetching from:', fullUrl);
       
       const response = await fetch(fullUrl, {
         method: 'GET',
         headers: {
-          'Accept': 'text/html',
-          'Origin': window.location.origin
-        },
-        credentials: 'omit'
+          'Accept': 'text/html'
+        }
       });
       
       console.log('📥 Response:', {
@@ -71,8 +63,7 @@
           console.log('✅ Adding schema:', {
             type: script.type,
             schemaType: content['@type'],
-            name: content.name,
-            preview: script.text.substring(0, 100) + '...'
+            name: content.name
           });
           document.head.appendChild(script);
           addedCount++;
