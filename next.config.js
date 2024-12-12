@@ -1,4 +1,4 @@
-const webpack = require('next/dist/compiled/webpack/webpack');
+const { DefinePlugin } = require('webpack');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -10,7 +10,7 @@ const nextConfig = {
   webpack: (config) => {
     config.plugins = config.plugins || [];
     config.plugins.push(
-      new webpack.DefinePlugin({
+      new DefinePlugin({
         '__SCHEMA_API_URL__': JSON.stringify(process.env.NEXT_PUBLIC_SCHEMA_API_URL)
       })
     );
