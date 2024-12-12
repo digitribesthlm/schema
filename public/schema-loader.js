@@ -4,10 +4,11 @@
       const currentUrl = window.location.href;
       const domain = window.location.hostname;
       
-      // Get the API URL from the page's runtime config
-      const runtimeConfig = window.__NEXT_DATA__?.runtimeConfig || {};
-      const apiBase = runtimeConfig.schemaApiUrl || '/api/schema';
+      // Get API URL from environment variable
+      const apiBase = window.NEXT_PUBLIC_SCHEMA_API_URL || '/api/schema';
       const apiUrl = `${apiBase}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
+      
+      console.log('Loading schema from:', apiUrl);
       
       const response = await fetch(apiUrl);
       if (!response.ok) {
