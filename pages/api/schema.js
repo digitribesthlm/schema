@@ -106,6 +106,12 @@ export default async function handler(req, res) {
     const response = { schemas };
     cache.put(cacheKey, response, CACHE_DURATION);
 
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept');
+    res.setHeader('Cache-Control', 's-maxage=86400');
+
     // If HTML format is requested, return just the schema script tags
     if (req.query.format === 'html') {
       const schemaHtml = schemas.map(schema => 
@@ -115,11 +121,6 @@ export default async function handler(req, res) {
       res.setHeader('Content-Type', 'text/html');
       return res.send(schemaHtml);
     }
-
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, Content-Type');
-    res.setHeader('Cache-Control', 's-maxage=86400');
     
     return res.json(response);
   } catch (error) {

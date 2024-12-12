@@ -4,13 +4,19 @@
       const currentUrl = window.location.href;
       const domain = window.location.hostname;
       
-      // Get API URL from environment variable
-      const apiBase = window.NEXT_PUBLIC_SCHEMA_API_URL || '/api/schema';
+      // Default to production URL if env var is not set
+      const apiBase = 'https://data.digigrowth.se/api/schema';
       const apiUrl = `${apiBase}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
       
       console.log('Loading schema from:', apiUrl);
       
-      const response = await fetch(apiUrl);
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Accept': 'text/html',
+          'Origin': window.location.origin
+        }
+      });
+      
       if (!response.ok) {
         console.error('Failed to load schema:', response.statusText);
         return;
