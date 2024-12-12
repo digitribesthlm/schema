@@ -38,7 +38,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'URL parameter is required' });
     }
 
-    // Always strip port from domain
     const domain = (req.query.domain || new URL(url).hostname).split(':')[0];
     console.log('Checking domain:', domain);
     
@@ -54,54 +53,40 @@ export default async function handler(req, res) {
     // Clear cache for debugging
     cache.clear();
     
-    const cachedData = cache.get(cacheKey);
-    if (cachedData) {
-      console.log('Returning cached data');
-      return res.json(cachedData);
-    }
-    
     const { db } = await connectToDatabase();
-    // Always use SCHEMA_DOMAIN for querying MongoDB
-    const queryDomain = process.env.SCHEMA_DOMAIN;
     
-    console.log('Query domain for MongoDB:', queryDomain);
-
-    // Log the MongoDB query parameters
-    console.log('MongoDB Query Params:', {
-      orgQuery: { domain: queryDomain, active: true },
-      productQuery: {
-        domain: queryDomain,
-        active: true,
-        $or: [{ 'metadata.pagePatterns': path }, { 'metadata.pagePatterns': `${path}/*` }]
-      }
-    });
+    // Only use the exact domain from the request
+    console.log('Looking for schemas with domain:', domain);
 
     const [orgSchema, productSchema] = await Promise.all([
-      db.collection('organization-schemas').findOne({ domain: queryDomain, active: true }),
+      db.collection('organization-schemas').findOne({
+        domain: domain,
+        active: true
+      }),
       db.collection('product-schemas').findOne({
-        domain: queryDomain,
+        domain: domain,
         active: true,
-        $or: [{ 'metadata.pagePatterns': path }, { 'metadata.pagePatterns': `${path}/*` }]
+        'metadata.pagePatterns': path
       })
     ]);
 
-    // Log all schemas in the collections for debugging
-    console.log('All Organization Schemas:', await db.collection('organization-schemas').find({}).toArray());
-    console.log('All Product Schemas:', await db.collection('product-schemas').find({}).toArray());
-
-    console.log('MongoDB results:', {
-      hasOrgSchema: !!orgSchema,
-      hasProductSchema: !!productSchema,
-      orgSchemaDomain: orgSchema?.domain,
-      productSchemaDomain: productSchema?.domain,
-      path,
-      queryDomain
+    // Log what we found
+    console.log('Found schemas:', {
+      orgSchema: orgSchema ? { domain: orgSchema.domain, active: orgSchema.active } : null,
+      productSchema: productSchema ? { 
+        domain: productSchema.domain, 
+        active: productSchema.active, 
+        patterns: productSchema.metadata?.pagePatterns,
+        path: path
+      } : null
     });
 
     const schemas = [
       productSchema && enhanceSchema(productSchema.schema),
       orgSchema && enhanceSchema(orgSchema.schema)
     ].filter(Boolean);
+
+    console.log('Returning schemas:', schemas.length);
 
     const response = { schemas };
     cache.put(cacheKey, response, CACHE_DURATION);

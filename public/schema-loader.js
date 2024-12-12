@@ -4,22 +4,23 @@
       const currentUrl = window.location.href;
       const domain = window.location.hostname;
       
-      // Default to production URL if env var is not set
-      const apiBase = 'https://data.digigrowth.se/api/schema';
-      const apiUrl = `${apiBase}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
+      // Use the production API URL
+      const apiUrl = 'https://data.digigrowth.se/api/schema';
+      const fullUrl = `${apiUrl}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
       
-      console.log('Loading schema from:', apiUrl);
+      console.log('Loading schema from:', fullUrl);
       
-      const response = await fetch(apiUrl, {
+      const response = await fetch(fullUrl, {
+        method: 'GET',
         headers: {
           'Accept': 'text/html',
           'Origin': window.location.origin
-        }
+        },
+        credentials: 'omit'
       });
       
       if (!response.ok) {
-        console.error('Failed to load schema:', response.statusText);
-        return;
+        throw new Error(`Failed to load schema: ${response.status} ${response.statusText}`);
       }
       
       const schemaHtml = await response.text();
@@ -34,11 +35,16 @@
       
       // Move each script tag to the head
       const scripts = temp.getElementsByTagName('script');
+      if (scripts.length === 0) {
+        console.log('No schema script tags found in response');
+        return;
+      }
+
       while (scripts.length > 0) {
         document.head.appendChild(scripts[0]);
       }
       
-      console.log('Schemas loaded successfully');
+      console.log(`Successfully loaded ${scripts.length} schema(s)`);
     } catch (error) {
       console.error('Error loading schema:', error);
     }
