@@ -38,6 +38,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'URL parameter is required' });
     }
 
+    // Always strip port from domain
     const domain = (req.query.domain || new URL(url).hostname).split(':')[0];
     console.log('Checking domain:', domain);
     
@@ -50,6 +51,9 @@ export default async function handler(req, res) {
     const cacheKey = `${domain}:${path}`;
     console.log('Path:', path, 'Cache key:', cacheKey);
     
+    // Clear cache for debugging
+    cache.clear();
+    
     const cachedData = cache.get(cacheKey);
     if (cachedData) {
       console.log('Returning cached data');
@@ -57,12 +61,20 @@ export default async function handler(req, res) {
     }
     
     const { db } = await connectToDatabase();
-    // In production, always use SCHEMA_DOMAIN
-    const queryDomain = process.env.NODE_ENV === 'production' 
-      ? process.env.SCHEMA_DOMAIN 
-      : (domain === 'localhost' ? process.env.SCHEMA_DOMAIN : domain);
+    // Always use SCHEMA_DOMAIN for querying MongoDB
+    const queryDomain = process.env.SCHEMA_DOMAIN;
     
     console.log('Query domain for MongoDB:', queryDomain);
+
+    // Log the MongoDB query parameters
+    console.log('MongoDB Query Params:', {
+      orgQuery: { domain: queryDomain, active: true },
+      productQuery: {
+        domain: queryDomain,
+        active: true,
+        $or: [{ 'metadata.pagePatterns': path }, { 'metadata.pagePatterns': `${path}/*` }]
+      }
+    });
 
     const [orgSchema, productSchema] = await Promise.all([
       db.collection('organization-schemas').findOne({ domain: queryDomain, active: true }),
@@ -72,6 +84,10 @@ export default async function handler(req, res) {
         $or: [{ 'metadata.pagePatterns': path }, { 'metadata.pagePatterns': `${path}/*` }]
       })
     ]);
+
+    // Log all schemas in the collections for debugging
+    console.log('All Organization Schemas:', await db.collection('organization-schemas').find({}).toArray());
+    console.log('All Product Schemas:', await db.collection('product-schemas').find({}).toArray());
 
     console.log('MongoDB results:', {
       hasOrgSchema: !!orgSchema,
