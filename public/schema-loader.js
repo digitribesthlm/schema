@@ -10,8 +10,8 @@
         domain: domain 
       });
 
-      // Get API URL from environment variable
-      const apiUrl = process.env.NEXT_PUBLIC_SCHEMA_API_URL;
+      // This will be replaced at build time with the actual URL from environment
+      const apiUrl = __SCHEMA_API_URL__;
       if (!apiUrl) {
         throw new Error('Schema API URL not configured');
       }
@@ -60,7 +60,6 @@
       }
 
       let addedCount = 0;
-      const schemas = [];
       while (scripts.length > 0) {
         const script = scripts[0];
         try {
@@ -70,8 +69,6 @@
           
           // Parse and validate the JSON
           const content = JSON.parse(script.text);
-          schemas.push(content);
-          
           console.log('✅ Adding schema:', {
             type: script.type,
             schemaType: content['@type'],
@@ -89,7 +86,7 @@
         temp.removeChild(script);
       }
       
-      console.log(`✨ Successfully loaded ${addedCount} of ${initialCount} schemas:`, schemas);
+      console.log(`✨ Successfully loaded ${addedCount} of ${initialCount} schemas`);
       
     } catch (error) {
       console.error('❌ Error loading schema:', {
