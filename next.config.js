@@ -2,6 +2,7 @@
 const nextConfig = {
   publicRuntimeConfig: {
     schemaApiUrl: process.env.NEXT_PUBLIC_SCHEMA_API_URL,
+    schemaDomain: process.env.SCHEMA_DOMAIN
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
