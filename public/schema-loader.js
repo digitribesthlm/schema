@@ -52,7 +52,7 @@
           const newScript = document.createElement('script');
           newScript.type = 'application/ld+json';
           const content = JSON.parse(script.text);
-          newScript.textContent = JSON.stringify(content, null, 2);
+          newScript.textContent = JSON.stringify(content);
           document.head.appendChild(newScript);
         } catch (e) {
           console.error('Failed to parse schema JSON:', e);
