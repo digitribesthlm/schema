@@ -1,49 +1,6 @@
-import { MongoClient } from 'mongodb';
-
 export const config = {
-  runtime: 'edge',
+  runtime: 'experimental-edge'
 };
-
-async function getMongoClient() {
-  const uri = process.env.MONGODB_URI;
-  if (!uri) throw new Error('Please add your Mongo URI to .env.local');
-  const client = new MongoClient(uri);
-  return client;
-}
-
-async function getSchemas(domain, path) {
-  const client = await getMongoClient();
-  
-  try {
-    await client.connect();
-    const db = client.db('schema-db');
-    
-    // Get all relevant collections
-    const collections = ['organization-schemas', 'product-schemas', 'service-schemas'];
-    
-    let allSchemas = [];
-    
-    for (const collection of collections) {
-      const schemas = await db.collection(collection)
-        .find({
-          domain: domain,
-          active: true,
-          $or: [
-            { 'metadata.pagePatterns': '*' },
-            { 'metadata.pagePatterns': path },
-            { 'metadata.pagePatterns': { $regex: path.replace('*', '.*') } }
-          ]
-        })
-        .toArray();
-      
-      allSchemas = [...allSchemas, ...schemas];
-    }
-    
-    return allSchemas.map(doc => doc.schema);
-  } finally {
-    await client.close();
-  }
-}
 
 export default async function handler(req) {
   try {
@@ -59,7 +16,22 @@ export default async function handler(req) {
     }
 
     const path = new URL(url).pathname;
-    const schemas = await getSchemas(domain, path);
+    
+    // Fetch data from your database (replace this with your actual data fetching logic)
+    const schemas = [
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Climber BI Ltd",
+        // ... rest of the organization schema
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Qlik Cloud Analytics",
+        // ... rest of the product schema
+      }
+    ];
     
     // Convert schemas to script tags
     const schemaScripts = schemas.map(schema => 
@@ -69,12 +41,11 @@ export default async function handler(req) {
     return new Response(schemaScripts, {
       headers: {
         'Content-Type': 'text/html',
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800'
+        'Cache-Control': 'public, s-maxage=3600',
       }
     });
     
   } catch (error) {
-    console.error('Schema API Error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal Server Error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
