@@ -1,7 +1,5 @@
-// @ts-check
-
 /** @type {import('next').NextConfig} */
-const config = {
+const nextConfig = {
   reactStrictMode: true,
   env: {
     ALLOWED_DOMAINS: process.env.ALLOWED_DOMAINS,
@@ -9,4 +7,4 @@ const config = {
   }
 };
 
-export default config;
+module.exports = nextConfig;
