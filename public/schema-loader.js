@@ -10,14 +10,11 @@
         domain: domain 
       });
 
-      // This will be replaced at build time with the actual URL from environment
-      const apiUrl = __SCHEMA_API_URL__;
-      if (!apiUrl) {
-        throw new Error('Schema API URL not configured');
-      }
+      // Use the current origin to determine the API URL
+      const apiUrl = `${window.location.protocol}//${domain}/api/schema`;
       console.log('🔧 Using API URL:', apiUrl);
       
-      const fullUrl = `${apiUrl}?url=${encodeURIComponent(currentUrl)}&domain=${domain}&format=html`;
+      const fullUrl = `${apiUrl}?url=${encodeURIComponent(currentUrl)}&domain=${domain}`;
       console.log('🔍 Fetching from:', fullUrl);
       
       const response = await fetch(fullUrl, {
@@ -89,10 +86,7 @@
       console.log(`✨ Successfully loaded ${addedCount} of ${initialCount} schemas`);
       
     } catch (error) {
-      console.error('❌ Error loading schema:', {
-        message: error.message,
-        stack: error.stack
-      });
+      console.error('❌ Error loading schema:', error);
     }
   };
 
