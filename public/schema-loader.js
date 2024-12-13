@@ -10,8 +10,11 @@
         domain: domain 
       });
 
-      // Use the current origin to determine the API URL
-      const apiUrl = `${window.location.protocol}//${domain}/api/schema`;
+      // Use the injected API URL from window object
+      const apiUrl = window.SCHEMA_API_URL;
+      if (!apiUrl) {
+        throw new Error('Schema API URL not configured');
+      }
       console.log('🔧 Using API URL:', apiUrl);
       
       const fullUrl = `${apiUrl}?url=${encodeURIComponent(currentUrl)}&domain=${domain}`;
