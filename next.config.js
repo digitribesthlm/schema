@@ -1,9 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  env: {
-    NEXT_PUBLIC_SCHEMA_API_URL: process.env.NEXT_PUBLIC_SCHEMA_API_URL,
-    NEXT_PUBLIC_SCHEMA_LOADER_URL: process.env.NEXT_PUBLIC_SCHEMA_LOADER_URL
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET' },
+          { key: 'Access-Control-Allow-Headers', value: 'Accept' }
+        ],
+      },
+    ]
   },
   experimental: {
     runtime: 'experimental-edge'

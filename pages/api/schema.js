@@ -17,19 +17,12 @@ export default async function handler(req) {
 
     const path = new URL(url).pathname;
     
-    // Fetch data from your database (replace this with your actual data fetching logic)
+    // Example schemas (replace with your MongoDB fetch)
     const schemas = [
       {
         "@context": "https://schema.org",
         "@type": "Organization",
-        "name": "Climber BI Ltd",
-        // ... rest of the organization schema
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Qlik Cloud Analytics",
-        // ... rest of the product schema
+        "name": "Climber BI Ltd"
       }
     ];
     
@@ -42,6 +35,9 @@ export default async function handler(req) {
       headers: {
         'Content-Type': 'text/html',
         'Cache-Control': 'public, s-maxage=3600',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Accept'
       }
     });
     
