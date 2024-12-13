@@ -1,115 +1,83 @@
-import { connectToDatabase } from '../../utils/mongodb';
-import cache from 'memory-cache';
-import { enhanceSchema } from '../../utils/schemaEnhancer';
+import { MongoClient } from 'mongodb';
 
-// Cache duration: 24 hours
-const CACHE_DURATION = 24 * 60 * 60 * 1000;
-
-const isAllowedDomain = (domain) => {
-  // Strip port number if present
-  const domainWithoutPort = domain.split(':')[0];
-  
-  if (process.env.NODE_ENV === 'development' && domainWithoutPort === 'localhost') {
-    return true;
-  }
-  
-  const allowedDomains = process.env.ALLOWED_DOMAINS?.split(',').map(d => d.trim()) || [];
-  return allowedDomains.some(d => 
-    domainWithoutPort === d || 
-    domainWithoutPort.endsWith(`.${d}`)
-  );
+export const config = {
+  runtime: 'edge',
 };
 
-const matchesPagePattern = (url, patterns) => {
-  if (!patterns || !Array.isArray(patterns)) return false;
-  const pathname = new URL(url).pathname;
-  return patterns.some(pattern => {
-    if (pattern === '*') return true;
-    if (pattern.endsWith('/*')) {
-      const base = pattern.slice(0, -2);
-      return pathname.startsWith(base);
-    }
-    return pathname === pattern;
-  });
-};
+async function getMongoClient() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) throw new Error('Please add your Mongo URI to .env.local');
+  const client = new MongoClient(uri);
+  return client;
+}
 
-export default async function handler(req, res) {
+async function getSchemas(domain, path) {
+  const client = await getMongoClient();
+  
   try {
-    const { url, domain } = req.query;
+    await client.connect();
+    const db = client.db('schema-db');
     
-    if (!url || !domain) {
-      throw new Error('URL and domain are required parameters');
-    }
-
-    console.log('📥 Schema request:', {
-      url,
-      domain,
-      headers: req.headers
-    });
-
-    if (!isAllowedDomain(domain)) {
-      throw new Error('Domain not allowed');
-    }
-
-    // Check cache first
-    const cacheKey = `${domain}:${url}`;
-    const cachedSchemas = cache.get(cacheKey);
-    if (cachedSchemas) {
-      console.log('📦 Returning cached schemas');
-      return res.status(200).send(cachedSchemas);
-    }
-
-    // Connect to MongoDB
-    const { db } = await connectToDatabase();
-
-    // Collections to query
-    const collections = [
-      'organization-schemas',
-      'product-schemas',
-      'service-schemas'
-    ];
-
-    // Query all collections for matching schemas
-    const matchingSchemas = [];
+    // Get all relevant collections
+    const collections = ['organization-schemas', 'product-schemas', 'service-schemas'];
+    
+    let allSchemas = [];
     
     for (const collection of collections) {
       const schemas = await db.collection(collection)
         .find({
           domain: domain,
-          active: true
+          active: true,
+          $or: [
+            { 'metadata.pagePatterns': '*' },
+            { 'metadata.pagePatterns': path },
+            { 'metadata.pagePatterns': { $regex: path.replace('*', '.*') } }
+          ]
         })
         .toArray();
+      
+      allSchemas = [...allSchemas, ...schemas];
+    }
+    
+    return allSchemas.map(doc => doc.schema);
+  } finally {
+    await client.close();
+  }
+}
 
-      // Filter schemas by page patterns
-      const matching = schemas.filter(schema => 
-        matchesPagePattern(url, schema.metadata?.pagePatterns)
+export default async function handler(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const url = searchParams.get('url');
+    const domain = searchParams.get('domain');
+    
+    if (!url || !domain) {
+      return new Response(
+        JSON.stringify({ error: 'Missing url or domain parameter' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
-
-      matchingSchemas.push(...matching);
     }
 
-    if (matchingSchemas.length === 0) {
-      console.log('⚠️ No matching schemas found');
-      return res.status(200).send('');
-    }
-
-    // Convert schemas to HTML script tags
-    const schemaHtml = matchingSchemas
-      .map(doc => {
-        const schema = enhanceSchema ? enhanceSchema(doc.schema) : doc.schema;
-        return `<script type="application/ld+json">${JSON.stringify(schema, null, 2)}</script>`;
-      })
-      .join('\n');
-
-    // Cache the result
-    cache.put(cacheKey, schemaHtml, CACHE_DURATION);
-
-    console.log(`✨ Returning ${matchingSchemas.length} schemas`);
-    res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(schemaHtml);
+    const path = new URL(url).pathname;
+    const schemas = await getSchemas(domain, path);
+    
+    // Convert schemas to script tags
+    const schemaScripts = schemas.map(schema => 
+      `<script type="application/ld+json">${JSON.stringify(schema)}</script>`
+    ).join('\n');
+    
+    return new Response(schemaScripts, {
+      headers: {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800'
+      }
+    });
     
   } catch (error) {
-    console.error('❌ Schema API error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Schema API Error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal Server Error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
