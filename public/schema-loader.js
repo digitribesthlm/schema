@@ -1,4 +1,16 @@
 (() => {
+  const findScriptUrl = () => {
+    // Try to find the script tag that loaded this file
+    const scripts = document.getElementsByTagName('script');
+    for (let i = scripts.length - 1; i >= 0; i--) {
+      const script = scripts[i];
+      if (script.src && script.src.includes('schema-loader.js')) {
+        return script;
+      }
+    }
+    return null;
+  };
+
   const loadSchema = async () => {
     try {
       console.log('🚀 Schema loader starting...');
@@ -10,10 +22,15 @@
         domain: domain 
       });
 
-      // Use the injected API URL from window object
-      const apiUrl = window.SCHEMA_API_URL;
+      // Find the script element that loaded this file
+      const scriptElement = findScriptUrl();
+      if (!scriptElement) {
+        throw new Error('Could not find schema loader script element');
+      }
+
+      const apiUrl = scriptElement.getAttribute('data-api-url');
       if (!apiUrl) {
-        throw new Error('Schema API URL not configured');
+        throw new Error('Schema API URL not configured. Add data-api-url attribute to the script tag.');
       }
       console.log('🔧 Using API URL:', apiUrl);
       

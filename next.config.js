@@ -2,7 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    NEXT_PUBLIC_SCHEMA_API_URL: process.env.NEXT_PUBLIC_SCHEMA_API_URL
+    NEXT_PUBLIC_SCHEMA_API_URL: process.env.NEXT_PUBLIC_SCHEMA_API_URL,
+    NEXT_PUBLIC_SCHEMA_LOADER_URL: process.env.NEXT_PUBLIC_SCHEMA_LOADER_URL
   },
   experimental: {
     runtime: 'experimental-edge'
