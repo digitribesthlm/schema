@@ -1,22 +1,31 @@
-import { MongoClient } from 'mongodb';
-
 export const config = {
-  runtime: 'experimental-edge'
+  runtime: 'nodejs'  // Changed from edge to nodejs to support MongoDB
 };
+
+import { MongoClient } from 'mongodb';
 
 async function getSchemas(domain, path) {
   const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('MONGODB_URI is not defined');
+  }
+
   const client = new MongoClient(uri);
   
   try {
     await client.connect();
-    const db = client.db('schema-db');
+    console.log('Connected to MongoDB');
+    
+    const db = client.db();
     
     // Query all relevant collections
     const collections = ['organization-schemas', 'product-schemas', 'service-schemas'];
     let allSchemas = [];
     
     for (const collection of collections) {
+      console.log(`Querying collection: ${collection}`);
+      console.log(`Looking for domain: ${domain}, path: ${path}`);
+      
       const schemas = await db.collection(collection)
         .find({
           domain: domain,
@@ -29,53 +38,55 @@ async function getSchemas(domain, path) {
         })
         .toArray();
       
+      console.log(`Found ${schemas.length} schemas in ${collection}`);
+      
       // Extract just the schema content from each document
       const schemaContents = schemas.map(doc => doc.schema);
       allSchemas = [...allSchemas, ...schemaContents];
     }
     
     return allSchemas;
+  } catch (error) {
+    console.error('MongoDB Error:', error);
+    throw error;
   } finally {
     await client.close();
+    console.log('Closed MongoDB connection');
   }
 }
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   try {
-    const { searchParams } = new URL(req.url);
-    const url = searchParams.get('url');
-    const domain = searchParams.get('domain');
+    const url = req.query.url;
+    const domain = req.query.domain;
     
     if (!url || !domain) {
-      return new Response(
-        JSON.stringify({ error: 'Missing url or domain parameter' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return res.status(400).json({ error: 'Missing url or domain parameter' });
     }
+
+    console.log('Processing request for:', { url, domain });
 
     const path = new URL(url).pathname;
     const schemas = await getSchemas(domain, path);
+    
+    console.log(`Found ${schemas.length} total schemas`);
     
     // Convert schemas to script tags
     const schemaScripts = schemas.map(schema => 
       `<script type="application/ld+json">${JSON.stringify(schema)}</script>`
     ).join('\n');
     
-    return new Response(schemaScripts, {
-      headers: {
-        'Content-Type': 'text/html',
-        'Cache-Control': 'public, s-maxage=3600',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET',
-        'Access-Control-Allow-Headers': 'Accept'
-      }
-    });
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Accept');
+    res.setHeader('Cache-Control', 'public, s-maxage=3600');
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.status(200).send(schemaScripts);
     
   } catch (error) {
-    console.error('Schema API Error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal Server Error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error('API Error:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }
